@@ -107,7 +107,57 @@ void allocator_test() {
   reset_allocator();
 }
 
+// -- GC
+
+const size_t kMark = ~(~0u >> 1);
+
+void gc_mark(size_t i) {
+  while (i) {
+    size_t h = vars[i].h;
+    vars[i].h |= kMark;
+    if (h & kMark || h >= tVal)
+      return;
+    gc_mark(h);
+    i = vars[i].t;
+  }
+}
+
+void gc_sweep() {
+  int freed_cnt = 0;
+  for (int i = 1; i <= max_var; i++) {
+    if (vars[i].h & kMark)
+      vars[i].h &= ~kMark;
+    else if (vars[i].h != tFree) {
+      free_var(i);
+      if (trace_gc)
+        freed_cnt++;
+    }
+  }
+  if (trace_gc)
+    std::cout << "gc: freed " << freed_cnt << std::endl;
+}
+
+void gc_test() {
+  reset_allocator();
+  size_t root = mk_pair(
+    get_symbol("test"),
+    mk_pair(
+      get_symbol("test"),
+      mk_int(42)));
+  gc_mark(root);
+  gc_sweep();
+  assert(allocated_count == 4);
+  vars[root].t = 0;
+  gc_mark(root);
+  gc_sweep();
+  assert(allocated_count == 2);
+  gc_sweep();
+  assert(allocated_count == 0);
+  reset_allocator();
+}
+
 int main(int param_cnt, const char* const* params) {
   allocator_test();
+  gc_test();
   return 0;
 }
