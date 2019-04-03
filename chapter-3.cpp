@@ -161,65 +161,65 @@ void gc_test() {
 const size_t kDoubleMark = kMark >> 1;
 
 void format_mark_refs(size_t i) {
-	while (i) {
-		size_t h = vars[i].h;
-		if (h & kMark)
-			vars[i].h |= kDoubleMark;
-		if (h >= tVal)
-			break;
-		vars[i].h |= kMark;
-		format_mark_refs(h);
-		i = vars[i].t;
-	}
+  while (i) {
+    size_t h = vars[i].h;
+    if (h & kMark)
+      vars[i].h |= kDoubleMark;
+    if (h >= tVal)
+      break;
+    vars[i].h |= kMark;
+    format_mark_refs(h);
+    i = vars[i].t;
+  }
 }
 
 string name_of(size_t i) {
-	string r;
-	do
-		r += 'a' + i % ('z' - 'a');
-	while ((i /= 'z' - 'a') != 0);
-	return r;
+  string r;
+  do
+    r += 'a' + i % ('z' - 'a');
+  while ((i /= 'z' - 'a') != 0);
+  return r;
 }
 
 string format_rec(size_t i) {
-	if (!i) return ".";
-	if (vars[i].h == tNum) return std::to_string(vars[i].v);
-	if (vars[i].h == tSymbol) return *vars[i].s_name;
-	if (!(vars[i].h & kMark)) return "#" + name_of(i);
-	string r;
-	if (vars[i].h & kDoubleMark) r += name_of(i) + ":";
-	r += '(';
-	do {
-		vars[i].h &= ~(kMark | kDoubleMark);
-		r += format_rec(vars[i].h);
-		r += ' ';
-		i = vars[i].t;
-	} while (i && !(vars[i].h & kDoubleMark) && (vars[i].h & kMark));
-	return r + format_rec(i) + ')';
+  if (!i) return ".";
+  if (vars[i].h == tNum) return std::to_string(vars[i].v);
+  if (vars[i].h == tSymbol) return *vars[i].s_name;
+  if (!(vars[i].h & kMark)) return "#" + name_of(i);
+  string r;
+  if (vars[i].h & kDoubleMark) r += name_of(i) + ":";
+  r += '(';
+  do {
+    vars[i].h &= ~(kMark | kDoubleMark);
+    r += format_rec(vars[i].h);
+    r += ' ';
+    i = vars[i].t;
+  } while (i && !(vars[i].h & kDoubleMark) && (vars[i].h & kMark));
+  return r + format_rec(i) + ')';
 }
 
 string format(size_t i) {
-	format_mark_refs(i);
-	return format_rec(i);
+  format_mark_refs(i);
+  return format_rec(i);
 }
 
 void visualization_test() {
-	reset_allocator();
-	assert(format(0) == ".");
-	assert(format(mk_int(42)) == "42");
-	assert(format(get_symbol("test")) == "test");
-	assert(format(mk_pair(
-		mk_int(1), mk_pair(
-			mk_int(2),
-			mk_pair(mk_int(3), 0)))) == "(1 2 3 .)");
-	assert(format(mk_pair(
-		mk_pair(mk_int(1), mk_int(2)),
-		mk_pair(mk_int(3), 0))) == "((1 2) 3 .)");
-	reset_allocator();
-	size_t a = mk_pair(mk_int(1), mk_int(2));
-	assert(format(mk_pair(a, a)) == "(d:(1 2) #d)");
-	vars[a].t = a;
-	assert(format(mk_pair(0, a)) == "(. d:(1 #d))");
+  reset_allocator();
+  assert(format(0) == ".");
+  assert(format(mk_int(42)) == "42");
+  assert(format(get_symbol("test")) == "test");
+  assert(format(mk_pair(
+    mk_int(1), mk_pair(
+      mk_int(2),
+      mk_pair(mk_int(3), 0)))) == "(1 2 3 .)");
+  assert(format(mk_pair(
+    mk_pair(mk_int(1), mk_int(2)),
+    mk_pair(mk_int(3), 0))) == "((1 2) 3 .)");
+  reset_allocator();
+  size_t a = mk_pair(mk_int(1), mk_int(2));
+  assert(format(mk_pair(a, a)) == "(d:(1 2) #d)");
+  vars[a].t = a;
+  assert(format(mk_pair(0, a)) == "(. d:(1 #d))");
 }
 
 int main(int param_cnt, const char* const* params) {
