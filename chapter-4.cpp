@@ -224,9 +224,58 @@ void visualization_test() {
   assert(format(mk_pair(0, a)) == "(. d:(1 #d))");
 }
 
+// -- parsing
+const size_t tNil = 0;
+
+void skip_ws(const char*& pos) {
+	while (*pos && *pos <= ' ')
+		pos++;
+}
+
+const char error_marker = 0;
+const char * last_open_par;
+
+size_t parse(const char*& pos) {
+	skip_ws(pos);
+	if (*pos == '(') {
+		last_open_par = pos;
+		pos++;
+		size_t r = tNil;
+		for (size_t *d = &r; *pos != ')'; d = &vars[*d].t) {
+			if (!*pos) {
+				pos = &error_marker;
+				return 0;
+			}
+			*d = mk_pair(parse(pos), tNil);
+		}
+		pos++;
+		return r;
+	}
+	char* end;
+	long i = strtol(pos, &end, 10);
+	if (end != pos) {
+		pos = end;
+		return mk_int(int(i));
+	}
+	string r;
+	while (*pos > ' ' && *pos != '(' && *pos != ')')
+		r += *pos++;
+	return get_symbol(r);
+}
+
+void parsing_test() {
+	reset_allocator();
+	const char *pos;
+	assert(format(parse(pos = "(- 3 1)")) == "(- 3 1 .)");
+	assert(pos != &error_marker && !*pos);
+	assert(format(parse(pos = "(((a b) + a b) 2 3)")) == "(((a b .) + a b .) 2 3 .)");
+	assert(pos != &error_marker && !*pos);
+}
+
 int main(int param_cnt, const char* const* params) {
   allocator_test();
   gc_test();
   visualization_test();
+  parsing_test();
   return 0;
 }

@@ -10,6 +10,8 @@ using std::unordered_map;
 
 #define assert(E) if (!(E)) { cerr << "assert at " << __LINE__ << endl; exit(-1); }
 
+bool trace_gc = false;
+
 const size_t kSlotsCount = 8192;
 const size_t tVal = kSlotsCount;
 const size_t tNum = tVal;
@@ -124,7 +126,7 @@ void gc_mark(size_t i) {
 
 void gc_sweep() {
   int freed_cnt = 0;
-  for (int i = 1; i <= max_var; i++) {
+  for (size_t i = 1; i <= max_var; i++) {
     if (vars[i].h & kMark)
       vars[i].h &= ~kMark;
     else if (vars[i].h != tFree) {
